@@ -47,6 +47,11 @@
   .modal-body{background:#fff;width:94vw;height:90vh;border-radius:10px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.2)}
   .modal-head{padding:12px 20px;border-bottom:1px solid #e5e6eb;display:flex;align-items:center;gap:12px;background:#fafbfc}
   .modal-head .t{font-size:13px;font-weight:600;flex:1;word-break:break-all;color:#1f2329}
+  .modal-head .btn{cursor:pointer;padding:5px 12px;border-radius:6px;background:#fff;border:1px solid #e5e6eb;font-size:12px;color:#4e5969}
+  .modal-head .btn:hover{background:#f2f3f5}
+  .modal-head .btn.primary{background:#1664ff;border-color:#1664ff;color:#fff}
+  .modal-head .btn.primary:hover{background:#0e4fd6}
+  .modal-head .btn:disabled{opacity:.45;cursor:not-allowed}
   .modal-head .close{cursor:pointer;padding:5px 12px;border-radius:6px;background:#fff;border:1px solid #e5e6eb;font-size:12px;color:#4e5969}
   .modal-head .close:hover{background:#f2f3f5}
   .modal-main{flex:1;display:flex;overflow:hidden}
@@ -98,6 +103,7 @@
   <div class="modal-body">
     <div class="modal-head">
       <div class="t" id="modalTitle"></div>
+      <button class="btn primary" id="modalDownload" type="button" disabled>下载模型</button>
       <div class="close" id="modalClose">关闭 ✕</div>
     </div>
     <div class="modal-main">
@@ -287,12 +293,58 @@ async function fetchWithProgress(url, onProgress){
   return out.buffer;
 }
 
+let currentDownload = null; // { filename, buffer, url }
+
+function resetDownloadBtn(){
+  const btn=document.getElementById('modalDownload');
+  currentDownload=null;
+  btn.disabled=true;
+  btn.textContent='下载模型';
+}
+
+function enableDownload(filename, buffer, url){
+  const btn=document.getElementById('modalDownload');
+  currentDownload={ filename, buffer, url };
+  btn.disabled=false;
+  btn.textContent='下载模型';
+}
+
+function downloadCurrentModel(){
+  if(!currentDownload) return;
+  const { filename, buffer, url } = currentDownload;
+  const name=(filename||'model').replace(/\.(zip|glb|gltf)$/i,'')+'.glb';
+  try{
+    if(buffer){
+      const blob=new Blob([buffer],{type:'model/gltf-binary'});
+      const href=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=href;
+      a.download=name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(href), 2000);
+      return;
+    }
+  }catch(e){}
+  // 回退：直接打开 COS 链接
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=name;
+  a.target='_blank';
+  a.rel='noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
 async function openGlb(title, url){
   document.getElementById('modalTitle').textContent = title;
   document.getElementById('filelist').innerHTML =
     `<div class="group-title">在线预览</div>
-     <div class="f active"><span class="badge three">glb</span><div style="flex:1;min-width:0"><div class="fname">${title}</div><div class="fpath">已针对网页优化，无需下载完整 zip</div></div></div>`;
+     <div class="f active"><span class="badge three">glb</span><div style="flex:1;min-width:0"><div class="fname">${title}</div><div class="fpath">先预览，确认没问题再下载</div></div></div>`;
   const preview=document.getElementById('preview');
+  resetDownloadBtn();
   showLoadProgress(preview, '正在下载 3D 模型…', 0, '准备中');
   modal.classList.add('show');
   disposeScene();
@@ -311,7 +363,9 @@ async function openGlb(title, url){
     });
     showLoadProgress(preview, '正在解析 3D 模型…', 95, '即将完成');
     await renderGlbBuffer(buf, preview);
+    enableDownload(title, buf, url);
   }catch(err){
+    resetDownloadBtn();
     preview.innerHTML=`<div class="empty">3D 加载失败：${err.message}</div>`;
   }
 }
@@ -360,7 +414,7 @@ async function renderGlbBuffer(buf, preview){
   let autoRotate=true, wire=false;
   const tb=document.createElement('div');
   tb.className='toolbar3d';
-  tb.innerHTML=`<button data-a="rot">⏸ 自动旋转</button><button data-a="wire">线框</button><button data-a="reset">重置视角</button>`;
+  tb.innerHTML=`<button data-a="rot">⏸ 自动旋转</button><button data-a="wire">线框</button><button data-a="reset">重置视角</button><button data-a="dl">⬇ 下载</button>`;
   preview.appendChild(tb);
   tb.querySelector('[data-a=rot]').onclick=(e)=>{
     autoRotate=!autoRotate;
@@ -375,6 +429,7 @@ async function renderGlbBuffer(buf, preview){
     camera.position.set(maxDim*1.5, maxDim*1.2, maxDim*1.5);
     controls.target.set(0,0,0);
   };
+  tb.querySelector('[data-a=dl]').onclick=()=>downloadCurrentModel();
 
   (function animate(){
     requestAnimationFrame(animate);
@@ -391,8 +446,9 @@ document.getElementById('search').oninput=()=>{
 
 /* ====== zip 预览 ====== */
 const modal=document.getElementById('modal');
-document.getElementById('modalClose').onclick=()=>modal.classList.remove('show');
-modal.onclick=(e)=>{if(e.target===modal)modal.classList.remove('show');};
+document.getElementById('modalClose').onclick=()=>{ resetDownloadBtn(); modal.classList.remove('show'); };
+document.getElementById('modalDownload').onclick=()=>downloadCurrentModel();
+modal.onclick=(e)=>{if(e.target===modal){ resetDownloadBtn(); modal.classList.remove('show'); }};
 
 let currentRenderer=null;
 
@@ -416,6 +472,7 @@ function badgeClass(ext){
 
 async function openZip(brand, fname){
   document.getElementById('modalTitle').textContent=fname;
+  resetDownloadBtn();
   document.getElementById('filelist').innerHTML='<div class="loading">加载中…</div>';
   document.getElementById('preview').innerHTML='<div class="empty">加载中…</div>';
   modal.classList.add('show');
