@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>苗课 · 机床模型库</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f6f8;color:#1f2329}
+  header{background:linear-gradient(135deg,#1f2329,#2d3340);color:#fff;padding:14px 28px;display:flex;align-items:center;gap:16px}
+  header h1{margin:0;font-size:16px;font-weight:600}
+  header .meta{font-size:12px;opacity:.65;margin-left:auto}
+  .layout{display:flex;height:calc(100vh - 54px)}
+  aside{width:260px;background:#fff;border-right:1px solid #e5e6eb;overflow-y:auto;padding:10px 0}
+  aside .item{padding:9px 18px;cursor:pointer;font-size:13px;border-left:3px solid transparent;display:flex;justify-content:space-between;align-items:center}
+  aside .item:hover{background:#f2f3f5}
+  aside .item.active{background:#e8f3ff;border-left-color:#1664ff;color:#1664ff;font-weight:500}
+  aside .item .cnt{font-size:11px;color:#86909c;background:#f2f3f5;padding:1px 7px;border-radius:10px}
+  aside .item.active .cnt{background:#d4e6ff;color:#1664ff}
+  main{flex:1;overflow-y:auto;padding:20px 26px}
+  .toolbar{display:flex;gap:12px;margin-bottom:16px;align-items:center;flex-wrap:wrap;position:sticky;top:0;background:#f5f6f8;padding:12px 0;z-index:10}
+  .toolbar .title{font-size:16px;font-weight:600}
+  .toolbar input{flex:1;max-width:340px;padding:7px 12px;border:1px solid #d0d3d9;border-radius:6px;font-size:13px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+  .card{background:#fff;border:1px solid #e5e6eb;border-radius:8px;overflow:hidden;cursor:pointer;transition:all .15s;display:flex;flex-direction:column}
+  .card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08);border-color:#c9cdd4}
+  .thumb{width:100%;height:150px;background:#f2f3f5;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+  .thumb img{width:100%;height:100%;object-fit:cover;transition:transform .2s}
+  .card:hover .thumb img{transform:scale(1.03)}
+  .thumb .noimg{font-size:11px;color:#86909c}
+  .card-body{padding:10px 12px;display:flex;gap:8px;align-items:center}
+  .icon{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;text-transform:uppercase}
+  .icon.zip{background:linear-gradient(135deg,#f53f3f,#ff7d00)}
+  .icon.img{background:linear-gradient(135deg,#00b42a,#7be100)}
+  .icon.xlsx{background:linear-gradient(135deg,#00b42a,#23c343)}
+  .icon.three{background:linear-gradient(135deg,#722ed1,#b37feb)}
+  .icon.json{background:linear-gradient(135deg,#1664ff,#4080ff)}
+  .icon.doc{background:linear-gradient(135deg,#ff7d00,#ff9a2e)}
+  .icon.other{background:#86909c}
+  .info{min-width:0;flex:1}
+  .name{font-size:12.5px;word-break:break-all;line-height:1.4}
+  .size{font-size:10.5px;color:#86909c;margin-top:2px}
+  .brand-tag{display:inline-block;font-size:10px;color:#1664ff;background:#e8f3ff;padding:1px 6px;border-radius:4px;margin-bottom:3px;font-weight:500}
+  .loading{padding:40px;text-align:center;color:#86909c;font-size:14px}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:50}
+  .modal.show{display:flex;align-items:center;justify-content:center}
+  .modal-body{background:#fff;width:94vw;height:90vh;border-radius:10px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.2)}
+  .modal-head{padding:12px 20px;border-bottom:1px solid #e5e6eb;display:flex;align-items:center;gap:12px;background:#fafbfc}
+  .modal-head .t{font-size:13px;font-weight:600;flex:1;word-break:break-all;color:#1f2329}
+  .modal-head .close{cursor:pointer;padding:5px 12px;border-radius:6px;background:#fff;border:1px solid #e5e6eb;font-size:12px;color:#4e5969}
+  .modal-head .close:hover{background:#f2f3f5}
+  .modal-main{flex:1;display:flex;overflow:hidden}
+  .filelist{width:360px;border-right:1px solid #e5e6eb;overflow-y:auto;background:#fafbfc;display:flex;flex-direction:column}
+  .group-title{padding:10px 16px 6px;font-size:11px;color:#86909c;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+  .filelist .f{padding:9px 16px;font-size:12.5px;cursor:pointer;border-left:3px solid transparent;display:flex;align-items:center;gap:8px}
+  .filelist .f:hover{background:#f0f2f5}
+  .filelist .f.active{background:#e8f3ff;border-left-color:#1664ff;color:#1664ff}
+  .filelist .f .badge{font-size:9px;padding:1px 6px;border-radius:4px;background:#e5e6eb;color:#4e5969;font-weight:600;flex-shrink:0;min-width:30px;text-align:center}
+  .filelist .f .badge.three{background:#f3e8ff;color:#722ed1}
+  .filelist .f .badge.img{background:#e8ffea;color:#00b42a}
+  .filelist .f .badge.doc{background:#fff7e6;color:#ff7d00}
+  .filelist .f .badge.code{background:#e8f3ff;color:#1664ff}
+  .filelist .f .fname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .filelist .f .fpath{font-size:10px;color:#86909c;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .preview{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;background:#fff;padding:0;position:relative}
+  .preview canvas{width:100%;height:100%;display:block}
+  .preview img{max-width:100%;max-height:100%;border-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+  .preview .docview{padding:28px 36px;max-width:900px;width:100%;overflow:auto;line-height:1.7;font-size:13.5px;color:#1f2329;white-space:pre-wrap;word-break:break-word;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+  .preview .docview .meta{color:#86909c;font-size:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #e5e6eb}
+  .preview .empty{color:#86909c;font-size:13px}
+  .toolbar3d{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:4px;background:rgba(255,255,255,.96);padding:5px 8px;border-radius:20px;box-shadow:0 2px 10px rgba(0,0,0,.15);font-size:12px;z-index:5}
+  .toolbar3d button{border:none;background:transparent;cursor:pointer;padding:5px 12px;border-radius:14px;font-size:12px;color:#4e5969}
+  .toolbar3d button:hover{background:#e8f3ff;color:#1664ff}
+</style>
+</head>
+<body>
+<header>
+  <h1>苗课 · 机床模型库 <span style="font-weight:400;opacity:.7;font-size:12px">Web精简版</span></h1>
+  <div class="meta" id="meta">加载中…</div>
+</header>
+<div class="layout">
+  <aside id="sidebar"></aside>
+  <main>
+    <div class="toolbar">
+      <div class="title" id="brandTitle"></div>
+      <input id="search" placeholder="全局搜索所有品牌…">
+    </div>
+    <div id="grid" class="grid"><div class="loading">正在加载模型库…</div></div>
+  </main>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-body">
+    <div class="modal-head">
+      <div class="t" id="modalTitle"></div>
+      <div class="close" id="modalClose">关闭 ✕</div>
+    </div>
+    <div class="modal-main">
+      <div class="filelist" id="filelist"></div>
+      <div class="preview" id="preview"><div class="empty">← 选择左侧文件预览</div></div>
+    </div>
+  </div>
+</div>
+
+<script src="./config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const CFG = window.APP_CONFIG || {};
+const ASSET_BASE = (CFG.assetBase || '').replace(/\/$/, '');
+const SITE_BASE = (CFG.siteBase || '.').replace(/\/$/, '') || '.';
+
+function assetUrl(rel){
+  const path = String(rel || '').replace(/^\//, '');
+  const encoded = path.split('/').map(encodeURIComponent).join('/');
+  // 预览图跟页面走；3D 模型走腾讯云 COS
+  if(path.startsWith('thumbs/')) return './' + encoded;
+  if(!ASSET_BASE) return './' + encoded;
+  return ASSET_BASE + '/' + encoded;
+}
+
+let brands = [];
+let cur = 0;
+
+async function loadBrands(){
+  const resp = await fetch(SITE_BASE + '/catalog.json');
+  if(!resp.ok) throw new Error('catalog.json HTTP ' + resp.status);
+  const data = await resp.json();
+  brands = data.brands || data;
+  const total = brands.reduce((s,b)=>s+b.files.length,0);
+  const note = data.mode === 'web' ? ' · 仅在线可预览模型' : '';
+  document.getElementById('meta').textContent = `${brands.length} 个品牌 · ${total} 个模型${note}`;
+  renderSidebar();
+  render();
+}
+
+function extClass(ext){
+  if(ext==='zip') return 'zip';
+  if(['jpg','jpeg','png','webp','gif'].includes(ext)) return 'img';
+  if(['xlsx','xls','csv'].includes(ext)) return 'xlsx';
+  if(['glb','gltf','obj','blend','stl','mtl'].includes(ext)) return 'three';
+  if(ext==='json') return 'json';
+  return 'doc';
+}
+function fmtSize(n){
+  const u=['B','KB','MB','GB'];let i=0;
+  while(n>=1024 && i<u.length-1){n/=1024;i++;}
+  return n.toFixed(1)+' '+u[i];
+}
+function renderSidebar(){
+  document.getElementById('sidebar').innerHTML = brands.map((b,i)=>
+    `<div class="item ${i===cur?'active':''}" data-i="${i}"><span>${b.name}</span><span class="cnt">${b.files.length}</span></div>`
+  ).join('');
+  document.querySelectorAll('#sidebar .item').forEach(el=>{
+    el.onclick=()=>{
+      cur=+el.dataset.i;
+      document.getElementById('search').value='';
+      render();
+    };
+  });
+}
+function render(){
+  const kw=document.getElementById('search').value.trim().toLowerCase();
+  const b=brands[cur];
+
+  if(!kw){
+    // 正常模式：显示当前品牌
+    document.getElementById('brandTitle').textContent=b.name;
+    renderGrid(b.files, b.name);
+  } else {
+    // 全局搜索模式：跨所有品牌
+    const results=[];
+    brands.forEach(br=>{
+      br.files.forEach(f=>{
+        if(f.name.toLowerCase().includes(kw)){
+          results.push({file:f, brand:br.name});
+        }
+      });
+    });
+    document.getElementById('brandTitle').textContent=`搜索 "${kw}" · 共 ${results.length} 个结果`;
+    renderGrid(results.map(r=>r.file), null, results.map(r=>r.brand));
+  }
+}
+
+function renderGrid(files, brandName, brandList){
+  document.getElementById('grid').innerHTML=files.map((f,i)=>{
+    const bn = brandList ? brandList[i] : brandName;
+    const cls=extClass(f.ext);
+    const isImg = ['jpg','jpeg','png','webp','gif'].includes(f.ext);
+    let thumbHtml;
+    if(isImg){
+      thumbHtml = `<div class="thumb"><img src="${assetUrl('models/'+bn+'/'+f.name)}" loading="lazy"></div>`;
+    } else if(f.thumb){
+      thumbHtml = `<div class="thumb"><img src="${assetUrl(f.thumb)}" loading="lazy"></div>`;
+    } else {
+      thumbHtml = `<div class="thumb"><span class="noimg">无预览图</span></div>`;
+    }
+    const brandTag = brandList ? `<div class="brand-tag">${bn}</div>` : '';
+    return `<div class="card" data-brand="${encodeURIComponent(bn)}" data-file="${encodeURIComponent(f.name)}">
+      ${thumbHtml}
+      <div class="card-body">
+        <div class="icon ${cls}">${f.ext||'?'}</div>
+        <div class="info">
+          ${brandTag}
+          <div class="name">${f.title || f.name}</div>
+          <div class="size">${fmtSize(f.size)}${f.webReady?' · 可在线预览':''}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('#grid .card').forEach(card=>{
+    card.onclick=()=>{
+      const bn=decodeURIComponent(card.dataset.brand);
+      const fname=decodeURIComponent(card.dataset.file);
+      const br=brands.find(x=>x.name===bn);
+      const f=br.files.find(x=>x.name===fname);
+      // Web 精简版：直接打开抽出的 GLB；旧 zip 包仍走 zip 预览
+      if(f.model) openGlb(f.title || f.name, assetUrl(f.model));
+      else if(f.ext==='zip') openZip(bn, f.name);
+      else window.open(assetUrl('models/'+bn+'/'+f.name),'_blank');
+    };
+  });
+}
+
+async function openGlb(title, url){
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('filelist').innerHTML =
+    `<div class="group-title">在线预览</div>
+     <div class="f active"><span class="badge three">glb</span><div style="flex:1;min-width:0"><div class="fname">${title}</div><div class="fpath">已针对网页优化，无需下载完整 zip</div></div></div>`;
+  const preview=document.getElementById('preview');
+  preview.innerHTML='<div class="empty">正在加载 3D 模型…</div>';
+  modal.classList.add('show');
+  disposeScene();
+  try{
+    const resp=await fetch(url);
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const buf=await resp.arrayBuffer();
+    await renderGlbBuffer(buf, preview);
+  }catch(err){
+    preview.innerHTML=`<div class="empty">3D 加载失败：${err.message}</div>`;
+  }
+}
+
+async function renderGlbBuffer(buf, preview){
+  const scene=new THREE.Scene();
+  scene.background=new THREE.Color(0xf0f2f5);
+  const w=preview.clientWidth, h=preview.clientHeight;
+  const camera=new THREE.PerspectiveCamera(45, w/h, 0.01, 1000);
+  const renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(w, h);
+  renderer.outputColorSpace=THREE.SRGBColorSpace;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  preview.innerHTML='';
+  preview.appendChild(renderer.domElement);
+  currentRenderer=renderer;
+
+  const controls=new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping=true;
+  scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+  const dir=new THREE.DirectionalLight(0xffffff, 1.2);
+  dir.position.set(5,10,7);
+  scene.add(dir);
+  const dir2=new THREE.DirectionalLight(0xffffff, 0.5);
+  dir2.position.set(-5,-3,-5);
+  scene.add(dir2);
+
+  const gltf=await new Promise((res,rej)=>{
+    new GLTFLoader().parse(buf, '', res, rej);
+  });
+  const model=gltf.scene;
+  scene.add(model);
+  const box=new THREE.Box3().setFromObject(model);
+  const size=box.getSize(new THREE.Vector3());
+  const center=box.getCenter(new THREE.Vector3());
+  const maxDim=Math.max(size.x,size.y,size.z)||1;
+  model.position.sub(center);
+  camera.position.set(maxDim*1.5, maxDim*1.2, maxDim*1.5);
+  camera.near=maxDim/1000; camera.far=maxDim*100;
+  camera.updateProjectionMatrix();
+  controls.target.set(0,0,0);
+
+  const grid=new THREE.GridHelper(maxDim*2, 20, 0xcccccc, 0xe5e5e5);
+  scene.add(grid);
+
+  let autoRotate=true, wire=false;
+  const tb=document.createElement('div');
+  tb.className='toolbar3d';
+  tb.innerHTML=`<button data-a="rot">⏸ 自动旋转</button><button data-a="wire">线框</button><button data-a="reset">重置视角</button>`;
+  preview.appendChild(tb);
+  tb.querySelector('[data-a=rot]').onclick=(e)=>{
+    autoRotate=!autoRotate;
+    e.target.textContent=autoRotate?'⏸ 自动旋转':'▶ 自动旋转';
+  };
+  tb.querySelector('[data-a=wire]').onclick=(e)=>{
+    wire=!wire;
+    model.traverse(o=>{if(o.isMesh){o.material.wireframe=wire;}});
+    e.target.style.fontWeight=wire?'700':'400';
+  };
+  tb.querySelector('[data-a=reset]').onclick=()=>{
+    camera.position.set(maxDim*1.5, maxDim*1.2, maxDim*1.5);
+    controls.target.set(0,0,0);
+  };
+
+  (function animate(){
+    requestAnimationFrame(animate);
+    controls.autoRotate=autoRotate;
+    controls.update();
+    renderer.render(scene,camera);
+  })();
+}
+let searchTimer=null;
+document.getElementById('search').oninput=()=>{
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(render, 150);
+};
+
+/* ====== zip 预览 ====== */
+const modal=document.getElementById('modal');
+document.getElementById('modalClose').onclick=()=>modal.classList.remove('show');
+modal.onclick=(e)=>{if(e.target===modal)modal.classList.remove('show');};
+
+let currentRenderer=null;
+
+function disposeScene(){
+  if(currentRenderer){
+    try{currentRenderer.dispose();}catch(e){}
+    if(currentRenderer.domElement && currentRenderer.domElement.parentNode){
+      currentRenderer.domElement.parentNode.removeChild(currentRenderer.domElement);
+    }
+    currentRenderer=null;
+  }
+}
+function basename(p){const parts=p.split('/');return parts[parts.length-1];}
+function dirname(p){const parts=p.split('/');parts.pop();return parts.join('/');}
+function badgeClass(ext){
+  if(['glb','gltf','obj','blend','stl','mtl'].includes(ext)) return 'three';
+  if(['jpg','jpeg','png','webp','gif'].includes(ext)) return 'img';
+  if(['json','py','txt','md','csv','ttf','html'].includes(ext)) return 'code';
+  return 'doc';
+}
+
+async function openZip(brand, fname){
+  document.getElementById('modalTitle').textContent=fname;
+  document.getElementById('filelist').innerHTML='<div class="loading">加载中…</div>';
+  document.getElementById('preview').innerHTML='<div class="empty">加载中…</div>';
+  modal.classList.add('show');
+
+  try{
+    const url=assetUrl('models/'+brand+'/'+fname);
+    const resp=await fetch(url);
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const buf=await resp.arrayBuffer();
+    const zip=await JSZip.loadAsync(buf);
+    const entries=[];
+    zip.forEach((path,entry)=>{ if(!entry.dir) entries.push({path, entry}); });
+
+    const groups = {
+      '3D 模型': entries.filter(e=>['glb','gltf','obj','blend','stl','mtl'].includes((e.path.split('.').pop()||'').toLowerCase())),
+      '预览图片': entries.filter(e=>['jpg','jpeg','png','webp','gif'].includes((e.path.split('.').pop()||'').toLowerCase())),
+      '文档与脚本': entries.filter(e=>!['glb','gltf','obj','blend','stl','mtl','jpg','jpeg','png','webp','gif'].includes((e.path.split('.').pop()||'').toLowerCase())),
+    };
+
+    const fl=document.getElementById('filelist');
+    let html='';
+    for(const [gname, gitems] of Object.entries(groups)){
+      if(!gitems.length) continue;
+      html += `<div class="group-title">${gname} (${gitems.length})</div>`;
+      html += gitems.map(e=>{
+        const ext=(e.path.split('.').pop()||'').toLowerCase();
+        const bn=basename(e.path);
+        const dn=dirname(e.path);
+        return `<div class="f" data-path="${e.path}">
+          <span class="badge ${badgeClass(ext)}">${ext}</span>
+          <div style="flex:1;min-width:0">
+            <div class="fname">${bn}</div>
+            ${dn?`<div class="fpath">${dn}</div>`:''}
+          </div>
+        </div>`;
+      }).join('');
+    }
+    fl.innerHTML=html;
+
+    fl.querySelectorAll('.f').forEach(el=>{
+      el.onclick=()=>{
+        fl.querySelectorAll('.f').forEach(x=>x.classList.remove('active'));
+        el.classList.add('active');
+        const entry=entries.find(x=>x.path===el.dataset.path);
+        previewEntry(entry, zip);
+      };
+    });
+
+    // 默认选中：glb > gltf > 第一张图 > 第一个文档
+    let target=null;
+    for(const ext of ['glb','gltf']){
+      target = entries.find(e=> (e.path.split('.').pop()||'').toLowerCase()===ext);
+      if(target) break;
+    }
+    if(!target) target = entries.find(e=>['png','jpg','jpeg'].includes((e.path.split('.').pop()||'').toLowerCase()));
+    if(!target) target = entries.find(e=>['txt','md','json'].includes((e.path.split('.').pop()||'').toLowerCase()));
+    if(!target) target = entries[0];
+
+    if(target){
+      const el=fl.querySelector(`.f[data-path="${CSS.escape(target.path)}"]`);
+      if(el){el.classList.add('active'); previewEntry(target, zip);}
+    }
+  }catch(err){
+    document.getElementById('filelist').innerHTML=`<div class="loading" style="color:#f53f3f">加载失败：${err.message}</div>`;
+    document.getElementById('preview').innerHTML='<div class="empty">无法读取 zip。</div>';
+  }
+}
+
+async function previewEntry({path,entry}, zip){
+  const preview=document.getElementById('preview');
+  const ext=(path.split('.').pop()||'').toLowerCase();
+  disposeScene();
+
+  if(ext==='glb'||ext==='gltf'){
+    preview.innerHTML='<div class="empty">正在加载 3D 模型…</div>';
+    try{
+      const buf=await entry.async('arraybuffer');
+      await renderGlbBuffer(buf, preview);
+    }catch(err){
+      preview.innerHTML=`<div class="empty">3D 加载失败：${err.message}</div>`;
+    }
+  }else if(ext==='jpg'||ext==='jpeg'||ext==='png'||ext==='webp'){
+    const blob=await entry.async('blob');
+    const url=URL.createObjectURL(blob);
+    preview.innerHTML=`<img src="${url}">`;
+  }else if(ext==='json'||ext==='txt'||ext==='md'||ext==='csv'){
+    const text=await entry.async('string');
+    preview.innerHTML=`<div class="docview"><div class="meta">${basename(path)}</div>${escapeHtml(text.slice(0,30000))}</div>`;
+  }else{
+    preview.innerHTML=`<div class="empty">此类型（.${ext}）不支持在线预览，请下载后查看。</div>`;
+  }
+}
+
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+loadBrands().catch(err=>{
+  document.getElementById('grid').innerHTML =
+    `<div class="loading" style="color:#f53f3f">加载失败：${err.message}<br>请确认已上传 catalog.json，且 config.js 中的地址正确。</div>`;
+});
+</script>
+</body>
+</html>
